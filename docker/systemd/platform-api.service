@@ -1,0 +1,20 @@
+[Unit]
+Description=Platform API (Docker Compose)
+Requires=docker.service
+After=docker.service network.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/opt/platform
+ExecStartPre=/usr/bin/docker-compose -f docker/docker-compose.prod.yml pull
+ExecStart=/usr/bin/docker-compose -f docker/docker-compose.prod.yml up -d --remove-orphans
+ExecStop=/usr/bin/docker-compose -f docker/docker-compose.prod.yml down
+ExecReload=/usr/bin/docker-compose -f docker/docker-compose.prod.yml up -d --remove-orphans
+TimeoutStartSec=300
+TimeoutStopSec=60
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

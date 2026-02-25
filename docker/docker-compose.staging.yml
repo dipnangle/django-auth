@@ -1,0 +1,53 @@
+version: "3.9"
+
+# Staging compose — same as prod but HTTP only (no SSL), looser settings.
+# Usage:
+#   docker-compose -f docker/docker-compose.staging.yml up -d
+
+services:
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    volumes:
+      - postgres_staging:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ${DB_NAME:-platform_staging}
+      POSTGRES_USER: ${DB_USER:-platform_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-platform_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_staging:/data
+
+  api:
+    image: ${DOCKER_IMAGE:-platform-api}:${VERSION:-latest}
+    restart: unless-stopped
+    command: gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 2 --timeout 60 --log-level debug
+    env_file: .env.staging
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  celery:
+    image: ${DOCKER_IMAGE:-platform-api}:${VERSION:-latest}
+    restart: unless-stopped
+    command: celery -A config worker -l debug --concurrency=2
+    env_file: .env.staging
+    depends_on:
+      - api
+      - redis
+
+volumes:
+  postgres_staging:
+  redis_staging:

@@ -1,0 +1,6 @@
+-r development.txt
+
+coverage==7.4.4
+pytest-xdist==3.5.0
+responses==0.25.0
+time-machine==2.14.1

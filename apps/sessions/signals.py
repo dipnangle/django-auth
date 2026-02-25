@@ -1,0 +1,1 @@
+"""Session signals — placeholder."""

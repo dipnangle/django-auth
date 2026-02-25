@@ -1,0 +1,1 @@
+"""Permission signals — placeholder."""

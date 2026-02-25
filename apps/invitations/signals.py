@@ -1,0 +1,1 @@
+"""Invitation signals — placeholder."""

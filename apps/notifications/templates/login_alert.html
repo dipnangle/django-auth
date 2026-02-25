@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>New sign-in to your account</h2>
+<p>Hi {{ user.first_name|default:"there" }},</p>
+<p>We detected a new sign-in to your <strong>{{ platform_name }}</strong> account.</p>
+<table style="width:100%;border-collapse:collapse;margin:20px 0;font-size:14px;">
+  <tr><td style="padding:8px 0;color:#6b7280;width:120px;">Time</td><td><strong>{{ login_time }}</strong></td></tr>
+  <tr><td style="padding:8px 0;color:#6b7280;">IP Address</td><td><strong>{{ ip_address }}</strong></td></tr>
+  <tr><td style="padding:8px 0;color:#6b7280;">Device</td><td><strong>{{ device }}</strong></td></tr>
+  <tr><td style="padding:8px 0;color:#6b7280;">Browser</td><td><strong>{{ browser }}</strong></td></tr>
+</table>
+<p>If this was you, no action is needed.</p>
+<p>If you didn't sign in, <strong><a href="{{ frontend_url }}/security">secure your account immediately</a></strong> and contact support.</p>
+{% endblock %}

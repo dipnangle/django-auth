@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Your account has been temporarily locked</h2>
+<p>Hi {{ user.first_name|default:"there" }},</p>
+<p>Your account has been <strong>temporarily locked</strong> due to multiple failed login attempts.</p>
+<table style="width:100%;border-collapse:collapse;margin:20px 0;font-size:14px;">
+  <tr><td style="padding:8px 0;color:#6b7280;width:150px;">Locked until</td><td><strong>{{ locked_until }}</strong></td></tr>
+  <tr><td style="padding:8px 0;color:#6b7280;">Duration</td><td><strong>{{ duration_minutes }} minutes</strong></td></tr>
+</table>
+<p>After the lockout period, you can try signing in again. If you need immediate access, contact your administrator.</p>
+<div class="note">
+  If you did not attempt to sign in, your account may be under attack. Please <a href="mailto:{{ support_email }}">contact support</a> immediately.
+</div>
+{% endblock %}

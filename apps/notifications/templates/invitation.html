@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>You've been invited to {{ organization_name }}</h2>
+<p>Hi there,</p>
+{% if invited_by_name %}
+<p><strong>{{ invited_by_name }}</strong> has invited you to join <strong>{{ organization_name }}</strong> on {{ platform_name }} as a <strong>{{ role_name }}</strong>.</p>
+{% else %}
+<p>You have been invited to join <strong>{{ organization_name }}</strong> on {{ platform_name }} as a <strong>{{ role_name }}</strong>.</p>
+{% endif %}
+{% if message %}
+<blockquote style="border-left:3px solid #e5e7eb;padding:10px 16px;color:#6b7280;margin:16px 0;">{{ message }}</blockquote>
+{% endif %}
+<a href="{{ invite_url }}" class="btn">Accept Invitation</a>
+<div class="note">
+  <strong>This invitation expires in 72 hours.</strong>
+</div>
+{% endblock %}

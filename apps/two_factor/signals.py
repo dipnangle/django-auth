@@ -1,0 +1,1 @@
+"""Two-factor signals — placeholder."""
