@@ -16,6 +16,9 @@ class Migration(migrations.Migration):
             fields=[
                 ("id", models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True)),
                 ("created_at", models.DateTimeField(auto_now_add=True, db_index=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("is_deleted", models.BooleanField(default=False, db_index=True)),
+                ("deleted_at", models.DateTimeField(blank=True, null=True)),
                 ("action", models.CharField(db_index=True, max_length=100)),
                 ("actor_email", models.EmailField(blank=True)),
                 ("actor_role", models.CharField(blank=True, max_length=50)),

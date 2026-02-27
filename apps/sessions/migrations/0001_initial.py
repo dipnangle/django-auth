@@ -5,6 +5,7 @@ import uuid
 
 class Migration(migrations.Migration):
     initial = True
+    app_label = "user_sessions"
     dependencies = [
         ("users", "0001_initial"),
     ]
@@ -15,6 +16,9 @@ class Migration(migrations.Migration):
             fields=[
                 ("id", models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True)),
                 ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("is_deleted", models.BooleanField(default=False, db_index=True)),
+                ("deleted_at", models.DateTimeField(blank=True, null=True)),
                 ("jti", models.CharField(db_index=True, max_length=36, unique=True)),
                 ("ip_address", models.GenericIPAddressField(blank=True, null=True)),
                 ("user_agent", models.TextField(blank=True)),

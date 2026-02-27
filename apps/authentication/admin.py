@@ -4,7 +4,7 @@ from apps.authentication.models import BlacklistedToken, EmailVerificationToken,
 
 @admin.register(BlacklistedToken)
 class BlacklistedTokenAdmin(admin.ModelAdmin):
-    list_display = ("user", "jti", "blacklisted_at", "expires_at")
+    list_display = ("user", "jti", "blacklisted_at")
     search_fields = ("user__email", "jti")
     readonly_fields = ("id", "blacklisted_at")
 

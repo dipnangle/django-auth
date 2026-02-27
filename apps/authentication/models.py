@@ -10,9 +10,9 @@ class BlacklistedToken(BaseModel):
     Redis is primary store; this is a backup and for audit purposes.
     """
     jti = models.CharField(max_length=36, unique=True, db_index=True)
-    user = models.ForeignKey("users.User", on_delete=models.CASCADE, related_name="blacklisted_tokens")
+    user = models.ForeignKey("users.User", on_delete=models.SET_NULL, null=True, blank=True, related_name="blacklisted_tokens")
     blacklisted_at = models.DateTimeField(auto_now_add=True)
-    reason = models.CharField(max_length=50, default="logout")
+    reason = models.CharField(max_length=255, blank=True, default="logout")
 
     class Meta:
         db_table = "blacklisted_tokens"

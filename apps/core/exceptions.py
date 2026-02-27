@@ -13,7 +13,7 @@ All API errors return a consistent shape:
 import logging
 from rest_framework import status
 from rest_framework.response import Response
-from rest_framework.views import exception_handler as drf_exception_handler
+#from rest_framework.views import exception_handler as drf_exception_handler
 from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 from django.http import Http404
 
@@ -207,6 +207,9 @@ def custom_exception_handler(exc, context):
     """
     Wraps all DRF exceptions in the standard platform error format.
     """
+
+    from rest_framework.views import exception_handler as drf_exception_handler  
+    response = drf_exception_handler(exc, context)
 
     # Handle our custom exceptions first
     if isinstance(exc, PlatformException):

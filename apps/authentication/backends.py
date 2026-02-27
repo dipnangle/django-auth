@@ -7,7 +7,7 @@ import logging
 from django.contrib.auth.backends import ModelBackend
 from rest_framework.authentication import BaseAuthentication
 
-from apps.core.exceptions import TokenExpired, TokenInvalid, AuthenticationFailed
+#from apps.core.exceptions import TokenExpired, TokenInvalid, AuthenticationFailed
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +21,9 @@ class JWTAuthentication(BaseAuthentication):
     keyword = "Bearer"
 
     def authenticate(self, request):
+
+        from apps.core.exceptions import TokenExpired, TokenInvalid, AuthenticationFailed
+
         auth_header = request.META.get("HTTP_AUTHORIZATION", "")
 
         if not auth_header.startswith(f"{self.keyword} "):
