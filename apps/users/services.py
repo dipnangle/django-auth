@@ -43,7 +43,7 @@ def create_user(
     from apps.users.selectors import get_user_by_email
 
     # 1. Email uniqueness check
-    if User.all_including_deleted().filter(email__iexact=email).exists():
+    if User.objects.all_including_deleted().filter(email__iexact=email).exists():
         raise ResourceAlreadyExists(f"A user with email '{email}' already exists.")
 
     # 2. Role hierarchy check
