@@ -1,21 +1,91 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Your login verification code</h2>
-<p>Hi {{ user.first_name|default:"there" }},</p>
-<p>Use the code below to complete your login to <strong>{{ platform_name }}</strong>.</p>
 
-<div style="text-align:center;margin:32px 0;">
-  <div style="display:inline-block;background:#f3f4f6;border:2px dashed #d1d5db;border-radius:12px;padding:20px 40px;">
-    <span style="font-size:36px;font-weight:700;letter-spacing:10px;color:#1a1a2e;font-family:monospace;">
-      {{ code }}
-    </span>
-  </div>
-</div>
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="font-family: Arial, Helvetica, sans-serif;">
+  <tr>
+    <td align="center">
 
-<div class="note">
-  <strong>This code expires in {{ expires_minutes }} minutes.</strong><br>
-  Never share this code with anyone — our team will never ask for it.
-</div>
+      <table role="presentation" width="100%" style="max-width:520px;" cellspacing="0" cellpadding="0" border="0">
+        
+        <tr>
+          <td style="padding:20px 16px;text-align:left;">
+            <h2 style="margin:0;font-size:22px;color:#111827;">
+              Your login verification code
+            </h2>
+          </td>
+        </tr>
 
-<p>If you did not attempt to log in, please <a href="mailto:{{ support_email }}">contact support</a> immediately and secure your account.</p>
+        <tr>
+          <td style="padding:0 16px;font-size:16px;color:#374151;">
+            <p style="margin:0 0 12px 0;">
+              Hi {{ user.first_name|default:"there" }},
+            </p>
+
+            <p style="margin:0 0 16px 0;">
+              Use the code below to complete your login to 
+              <strong>{{ platform_name }}</strong>.
+            </p>
+          </td>
+        </tr>
+
+        <tr>
+          <td align="center" style="padding:24px 16px;">
+            
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+              <tr>
+                <td style="
+                  background:#f3f4f6;
+                  border:2px dashed #d1d5db;
+                  border-radius:12px;
+                  padding:18px 28px;
+                  text-align:center;
+                ">
+                  <span style="
+                    font-size:32px;
+                    font-weight:700;
+                    letter-spacing:8px;
+                    color:#1a1a2e;
+                    font-family:monospace;
+                  ">
+                    {{ code }}
+                  </span>
+                </td>
+              </tr>
+            </table>
+
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:0 16px;">
+            <div style="
+              background:#f9fafb;
+              border-radius:8px;
+              padding:14px;
+              font-size:14px;
+              color:#374151;
+              line-height:1.5;
+            ">
+              <strong>This code expires in {{ expires_minutes }} minutes.</strong><br>
+              Never share this code with anyone — our team will never ask for it.
+            </div>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:20px 16px;font-size:14px;color:#6b7280;">
+            If you did not attempt to log in, please 
+            <a href="mailto:{{ support_email }}" style="color:#2563eb;text-decoration:none;">
+              contact support
+            </a> 
+            immediately and secure your account.
+          </td>
+        </tr>
+
+      </table>
+
+    </td>
+  </tr>
+</table>
+
 {% endblock %}

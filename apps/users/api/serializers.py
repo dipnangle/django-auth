@@ -77,6 +77,7 @@ class UserCreateSerializer(serializers.Serializer):
     last_name = serializers.CharField(max_length=150)
     phone = serializers.CharField(max_length=20, required=False, allow_blank=True)
     role_id = serializers.UUIDField()
+    password = serializers.CharField(write_only=True, min_length=8, required=False, allow_blank=True)
     send_invitation = serializers.BooleanField(default=True)
 
 

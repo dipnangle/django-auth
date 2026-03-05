@@ -68,6 +68,7 @@ def create_user(
         phone=phone,
         is_email_verified=is_email_verified,
         is_active=True,
+        global_role=role if role and not organization else None,
     )
 
     # 5. Enforce 2FA requirement based on role

@@ -227,7 +227,7 @@ def send_verification_email(*, user) -> None:
     send_email(
         to=user.email,
         template="email_verify",
-        context={"user": user, "verify_url": verify_url, "expires_hours": 24},
+        context={"user": user, "verification_url": verify_url, "expires_hours": 24},
     )
 
 

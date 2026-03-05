@@ -52,11 +52,13 @@ class UserListCreateView(APIView):
             email=data["email"],
             first_name=data["first_name"],
             last_name=data["last_name"],
+            password=data.get("password"),
             phone=data.get("phone", ""),
             created_by=request.user,
             organization=request.organization,
             role=role,
-            send_verification=data.get("send_invitation", True),
+            send_verification=True,
+            is_email_verified=False,
         )
         return Response(UserDetailSerializer(user, context={"request": request}).data, status=status.HTTP_201_CREATED)
 
