@@ -214,3 +214,23 @@ def rotate_refresh_token(refresh_token: str) -> dict:
         blacklist_token(old_jti, int(max(remaining, 0)))
 
     return generate_token_pair(user)
+
+
+def decode_partial_token(token: str) -> dict:
+    """Decode the short-lived partial auth token issued during 2FA flow."""
+    import jwt
+    from django.conf import settings as s
+    try:
+        payload = jwt.decode(
+            token,
+            s.JWT_SETTINGS["SIGNING_KEY"],
+            algorithms=[s.JWT_SETTINGS["ALGORITHM"]],
+            audience=s.JWT_SETTINGS["AUDIENCE"],
+            issuer=s.JWT_SETTINGS["ISSUER"],
+        )
+        if payload.get("token_type") != "2fa_pending":
+            raise ValueError("Not a partial auth token")
+        return payload
+    except Exception as e:
+        from apps.core.exceptions import TokenInvalid
+        raise TokenInvalid(str(e))

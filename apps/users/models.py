@@ -57,6 +57,11 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     # ── 2FA ───────────────────────────────────
     is_2fa_enabled = models.BooleanField(default=False, db_index=True)
+    two_fa_method = models.CharField(
+        max_length=10,
+        choices=[("totp", "Authenticator App"), ("email", "Email OTP")],
+        default="totp",
+    )
     is_2fa_enforced = models.BooleanField(
         default=False,
         help_text="Set to True for roles where 2FA is mandatory.",

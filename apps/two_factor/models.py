@@ -31,3 +31,28 @@ class BackupCode(BaseModel):
     class Meta:
         db_table = "backup_codes"
         indexes = [models.Index(fields=["user", "is_used"])]
+
+
+class EmailOTP(BaseModel):
+    """
+    Email-based OTP for 2FA.
+    A fresh 6-digit code is sent on every login attempt.
+    """
+    user = models.ForeignKey("users.User", on_delete=models.CASCADE, related_name="email_otps")
+    code_hash = models.CharField(max_length=64)
+    expires_at = models.DateTimeField()
+    is_used = models.BooleanField(default=False)
+    used_at = models.DateTimeField(null=True, blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+
+    class Meta:
+        db_table = "email_otps"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"EmailOTP: {self.user.email} ({'used' if self.is_used else 'pending'})"
+
+    @property
+    def is_expired(self):
+        from django.utils import timezone
+        return timezone.now() > self.expires_at

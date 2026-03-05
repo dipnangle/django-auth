@@ -1,3 +1,4 @@
+from decouple import config
 """Development settings — local development only."""
 
 from .base import *  # noqa
@@ -28,7 +29,7 @@ DATABASES["default"]["NAME"] = "platform_dev"  # noqa
 # ─────────────────────────────────────────────
 # Email — print to console
 # ─────────────────────────────────────────────
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+EMAIL_BACKEND = config("EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend")
 
 # ─────────────────────────────────────────────
 # CORS — allow all in dev

@@ -200,3 +200,106 @@ def _generate_qr_base64(provisioning_uri: str) -> str:
         return base64.b64encode(buffer.getvalue()).decode("utf-8")
     except ImportError:
         return ""
+
+
+# ─────────────────────────────────────────────
+# Email OTP
+# ─────────────────────────────────────────────
+
+def send_email_otp(*, user, ip_address: str = "") -> bool:
+    """
+    Generate and email a 6-digit OTP code.
+    Called automatically during login when user has email 2FA enabled.
+    """
+    from apps.two_factor.models import EmailOTP
+    from apps.notifications.services import send_email
+    import random
+
+    # Invalidate any existing unused codes for this user
+    EmailOTP.objects.filter(user=user, is_used=False).update(is_used=True)
+
+    # Generate 6-digit code
+    raw_code = f"{random.SystemRandom().randint(0, 999999):06d}"
+    expires_minutes = TWO_FACTOR.get("EMAIL_OTP_EXPIRY_MINUTES", 10)
+    expires_at = timezone.now() + timezone.timedelta(minutes=expires_minutes)
+
+    EmailOTP.objects.create(
+        user=user,
+        code_hash=hash_token(raw_code),
+        expires_at=expires_at,
+        ip_address=ip_address or None,
+    )
+
+    send_email(
+        to=user.email,
+        template="2fa_code",
+        subject="Your login verification code",
+        context={
+            "user": user,
+            "code": raw_code,
+            "expires_minutes": expires_minutes,
+        },
+    )
+
+    logger.info("Email OTP sent to: %s", user.email)
+    return True
+
+
+def verify_email_otp(*, user, code: str) -> bool:
+    """
+    Verify a 6-digit email OTP code during login.
+    """
+    from apps.two_factor.models import EmailOTP
+    from apps.authentication.rate_limit import get_2fa_limiter
+
+    limiter = get_2fa_limiter(str(user.id))
+    limiter.check()
+
+    code_hash = hash_token(code.strip())
+
+    try:
+        otp = EmailOTP.objects.get(
+            user=user,
+            code_hash=code_hash,
+            is_used=False,
+        )
+    except EmailOTP.DoesNotExist:
+        limiter.increment()
+        raise TwoFactorInvalid("Invalid or expired OTP code.")
+
+    if otp.is_expired:
+        limiter.increment()
+        raise TwoFactorInvalid("OTP code has expired. Please log in again to get a new code.")
+
+    otp.is_used = True
+    otp.used_at = timezone.now()
+    otp.save(update_fields=["is_used", "used_at"])
+
+    limiter.reset()
+    logger.info("Email OTP verified for user: %s", user.email)
+    return True
+
+
+@transaction.atomic
+def enable_email_otp(*, user) -> bool:
+    """
+    Switch user to Email OTP method.
+    Disables TOTP if active.
+    """
+    from apps.two_factor.models import TOTPDevice
+
+    TOTPDevice.objects.filter(user=user).delete()
+
+    user.is_2fa_enabled = True
+    user.two_fa_method = "email"
+    user.save(update_fields=["is_2fa_enabled", "two_fa_method", "updated_at"])
+
+    logger.info("Email OTP 2FA enabled for user: %s", user.email)
+    return True
+
+
+@transaction.atomic
+def enable_totp_method(*, user) -> None:
+    """Mark user as using TOTP method after confirm_totp succeeds."""
+    user.two_fa_method = "totp"
+    user.save(update_fields=["two_fa_method", "updated_at"])

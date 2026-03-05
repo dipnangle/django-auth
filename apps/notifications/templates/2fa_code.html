@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Your login verification code</h2>
+<p>Hi {{ user.first_name|default:"there" }},</p>
+<p>Use the code below to complete your login to <strong>{{ platform_name }}</strong>.</p>
+
+<div style="text-align:center;margin:32px 0;">
+  <div style="display:inline-block;background:#f3f4f6;border:2px dashed #d1d5db;border-radius:12px;padding:20px 40px;">
+    <span style="font-size:36px;font-weight:700;letter-spacing:10px;color:#1a1a2e;font-family:monospace;">
+      {{ code }}
+    </span>
+  </div>
+</div>
+
+<div class="note">
+  <strong>This code expires in {{ expires_minutes }} minutes.</strong><br>
+  Never share this code with anyone — our team will never ask for it.
+</div>
+
+<p>If you did not attempt to log in, please <a href="mailto:{{ support_email }}">contact support</a> immediately and secure your account.</p>
+{% endblock %}

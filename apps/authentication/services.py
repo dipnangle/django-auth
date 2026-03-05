@@ -77,13 +77,22 @@ def login_user(*, email: str, password: str, ip_address: str = "", user_agent: s
 
     # 6. 2FA check
     if user.is_2fa_enabled or user.is_2fa_enforced:
-        # Return a partial response indicating 2FA is needed
-        # The actual token is issued after 2FA verification
         partial_token = _generate_partial_auth_token(user)
+        method = getattr(user, "two_fa_method", "totp")
+
+        # Auto-send OTP if user uses email method
+        if method == "email":
+            try:
+                from apps.two_factor.services import send_email_otp
+                send_email_otp(user=user, ip_address=ip_address)
+            except Exception as e:
+                logger.error("Failed to send email OTP: %s", e)
+
         return {
             "requires_2fa": True,
+            "method": method,
             "partial_token": partial_token,
-            "message": "2FA verification required.",
+            "message": "2FA verification required. Check your email." if method == "email" else "2FA verification required.",
         }
 
     # 7. Full auth — generate tokens
