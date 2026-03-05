@@ -175,6 +175,8 @@ def complete_2fa_login(*, user, ip_address: str = "", user_agent: str = "") -> d
         user_agent=user_agent,
     )
 
+    from apps.audit.services import log_action
+    log_action(action="user.login", actor=user, target=user, metadata={"method": "2fa", "ip": ip_address})
     return {
         "requires_2fa": False,
         **tokens,

@@ -88,6 +88,8 @@ def login_user(*, email: str, password: str, ip_address: str = "", user_agent: s
             except Exception as e:
                 logger.error("Failed to send email OTP: %s", e)
 
+        from apps.audit.services import log_action
+        log_action(action="user.2fa_required", actor=user, target=user, metadata={"method": method, "ip": ip_address})
         return {
             "requires_2fa": True,
             "method": method,
@@ -113,6 +115,8 @@ def login_user(*, email: str, password: str, ip_address: str = "", user_agent: s
     ip_limiter.reset()
     email_limiter.reset()
 
+    from apps.audit.services import log_action
+    log_action(action="user.login", actor=user, target=user, metadata={"ip": ip_address})
     logger.info("User logged in: %s from %s", user.email, ip_address)
     return {
         "requires_2fa": False,
@@ -165,6 +169,8 @@ def logout_user(*, user, refresh_token: str = None, jti: str = None) -> None:
         blacklist_token(jti)
         revoke_session_by_jti(jti=jti)
 
+    from apps.audit.services import log_action
+    log_action(action="user.logout", actor=user, target=user)
     logger.info("User logged out: %s", user.email)
 
 

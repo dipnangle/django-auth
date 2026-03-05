@@ -395,3 +395,21 @@ EMAIL_HOST_USER = config("EMAIL_HOST_USER", default="")
 EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD", default="")
 DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="noreply@yourplatform.com")
 EMAIL_SUBJECT_PREFIX = config("EMAIL_SUBJECT_PREFIX", default="")
+
+# drf-spectacular JWT auth extension
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Platform API",
+    "DESCRIPTION": "Multi-tenant SaaS Platform API",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "SECURITY": [{"BearerAuth": []}],
+    "COMPONENTS": {
+        "securitySchemes": {
+            "BearerAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT",
+            }
+        }
+    },
+}
