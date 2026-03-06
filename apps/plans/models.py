@@ -138,7 +138,12 @@ class License(BaseModel):
         from django.utils import timezone
         if self.valid_until is None:
             return False
-        return timezone.now() > self.valid_until
+        from django.utils import timezone as tz
+        import datetime
+        valid_until = self.valid_until
+        if isinstance(valid_until, datetime.date) and not isinstance(valid_until, datetime.datetime):
+            valid_until = tz.make_aware(datetime.datetime.combine(valid_until, datetime.time.max))
+        return tz.now() > valid_until
 
     @property
     def is_in_grace_period(self) -> bool:

@@ -32,7 +32,12 @@ def get_user_primary_org(user):
 
 
 def list_user_organizations(user):
-    from apps.organizations.models import OrganizationMembership
+    from apps.organizations.models import Organization, OrganizationMembership
+    from apps.roles.constants import RoleLevel
+    # ROOT and SUPERADMIN see all organizations
+    if user.global_role and user.global_role.level <= RoleLevel.SUPERADMIN:
+        return Organization.objects.filter(is_deleted=False).order_by("-created_at")
+    # Others see only orgs they are members of
     memberships = (
         OrganizationMembership.objects
         .filter(user=user, is_active=True)

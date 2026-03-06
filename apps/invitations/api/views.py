@@ -12,10 +12,22 @@ class InvitationSendView(APIView):
     permission_classes = [IsAuthenticated, IsAdmin, IsAccountActive]
 
     def post(self, request):
+        from apps.organizations.selectors import get_organization_by_id
+        from apps.core.exceptions import ValidationError
+
         role = get_role_by_id(request.data.get("role_id"))
+
+        # Get org from request.organization (middleware) or organization_id in body
+        organization = request.organization
+        if not organization:
+            org_id = request.data.get("organization_id")
+            if not org_id:
+                raise ValidationError("organization_id is required.")
+            organization = get_organization_by_id(org_id)
+
         invite = send_invitation(
             invited_by=request.user,
-            organization=request.organization,
+            organization=organization,
             role=role,
             email=request.data.get("email"),
             message=request.data.get("message", ""),
