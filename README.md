@@ -219,6 +219,10 @@ cp .env.example .env
 
 # Open and fill in your values
 nano .env    # or: vim .env
+
+# to generate the secret key from terminal
+python -c "import secrets; print(secrets.token_hex(32))"
+
 ```
 
 **Minimum required values for local dev:**
