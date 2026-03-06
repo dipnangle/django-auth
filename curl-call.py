@@ -6,8 +6,8 @@ curl -s -X POST http://localhost:8000/api/v1/auth/login/ \
 curl -s -X POST http://localhost:8000/api/v1/2fa/verify/email/ \
   -H "Content-Type: application/json" \
   -d '{
-    "code": "116030",
-    "partial_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiMmZhX3BlbmRpbmciLCJ1c2VyX2lkIjoiMTc4NGY4ZmQtNzg3MS00NWRhLThkMjAtNzM5OGZlNmZlNzU3IiwianRpIjoiMmRhYmM3MzItNDM4Yi00MzZhLTgwNDItN2Y2ODViMDc3YzdjIiwiaWF0IjoxNzcyODAxNjA3LCJleHAiOjE3NzI4MDE5MDcsImlzcyI6InBsYXRmb3JtIiwiYXVkIjoicGxhdGZvcm0tYXBpIn0.m4xCy1uNnF0dT4ova_wGr7WzFaGcJt-wkoj5YiHTVv0"
+    "code": "771209",
+    "partial_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiMmZhX3BlbmRpbmciLCJ1c2VyX2lkIjoiMTc4NGY4ZmQtNzg3MS00NWRhLThkMjAtNzM5OGZlNmZlNzU3IiwianRpIjoiMWNkOGViMzMtODZiOS00YWMyLWE2NDAtNDNkOTAwMmE1M2M3IiwiaWF0IjoxNzcyODE0NjU2LCJleHAiOjE3NzI4MTQ5NTYsImlzcyI6InBsYXRmb3JtIiwiYXVkIjoicGxhdGZvcm0tYXBpIn0.LHSMVmmHt1hTB7ZvlWZJV7I70DNFBi-OSsuvJf9GY3Y"
   }' | python3 -m json.tool
 
 
@@ -562,3 +562,118 @@ curl -s -X POST http://10.0.0.20:8000/api/v1/invitations/ \
     "role_id": "e54f7d38-0fb1-423b-8fe2-946e518b2673",
     "organization_id": "4b546ec7-acab-40cd-97e9-3087a3ae8654"
   }' | python3 -m json.tool
+  
+  
+# for celery we can create teh service so most of the time it will work
+# Create directories first
+mkdir -p /var/log/celery /var/run/celery
+
+cat > /etc/systemd/system/celery.service << 'EOF'
+[Unit]
+Description=Celery Worker
+After=network.target redis.service
+
+[Service]
+Type=simple
+WorkingDirectory=/home/django/repo/backend
+ExecStart=/home/django/repo/venv/bin/celery -A config.celery worker --loglevel=info
+Restart=always
+RestartSec=5
+StandardOutput=append:/var/log/celery/worker.log
+StandardError=append:/var/log/celery/worker.log
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+systemctl daemon-reload
+systemctl enable celery
+systemctl start celery
+systemctl status celery
+
+
+# check the token via curl call
+curl -s http://10.0.0.20:8000/api/v1/invitations/rTa7Q_wfWsVDj36bz4ebkfDSEghG0iSBncJ7OHaBFaYGyabj-VkZKxsEvczl3eX2/preview/ | python3 -m json.tool
+
+# accept the token
+# define before because of special character in token
+
+URL_TOKEN="rTa7Q_wfWsVDj36bz4ebkfDSEghG0iSBncJ7OHaBFaYGyabj-VkZKxsEvczl3eX2"
+
+curl -s -X POST "http://10.0.0.20:8000/api/v1/invitations/${URL_TOKEN}/accept/" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "first_name": "New",
+    "last_name": "Invite",
+    "password": "NewUser123!"
+  }' | python3 -m json.tool
+  
+  
+# Let's move to Impersonation. Check what endpoints exist:
+python manage.py show_urls 2>/dev/null | grep "imperson"
+
+
+cd /home/django/repo/backend
+python3 -c "
+import os
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+import django
+django.setup()
+from apps.users.models import User
+for u in User.objects.all():
+    print(f'{u.email} | ID: {u.id} | Role: {u.global_role}')
+"
+
+
+# ROOT impersonates end user
+ 
+curl -s -X POST http://10.0.0.20:8000/api/v1/impersonation/start/ \
+  -H "Authorization: Bearer $ROOT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "331b0755-d9e9-47b2-8aaf-16230fe1aee2"}' | python3 -m json.tool
+  
+
+# check the token
+IMPERSONATION_TOKEN="eyJhbGci..."  # paste the access_token above
+
+# Act as test_admin — get their profile
+curl -s http://10.0.0.20:8000/api/v1/users/me/ \
+  -H "Authorization: Bearer $IMPERSONATION_TOKEN" | python3 -m json.tool
+  
+
+# ADMIN tries to impersonate END_USER — should fail with 403
+curl -s -X POST http://10.0.0.20:8000/api/v1/impersonation/start/ \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "03e1d57c-3e8d-4968-9ea6-23c8aa56b75d"}' | python3 -m json.tool
+  
+# check permissions urls
+python manage.py show_urls 2>/dev/null | grep "permission"
+
+# system config check and change
+# Update maintenance_mode
+curl -s -X PATCH http://10.0.0.20:8000/api/v1/system-config/maintenance_mode/ \
+  -H "Authorization: Bearer $ROOT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"value": true}' | python3 -m json.tool
+
+# Verify it changed
+curl -s http://10.0.0.20:8000/api/v1/system-config/ \
+  -H "Authorization: Bearer $ROOT_TOKEN" | python3 -m json.tool
+  
+  
+All backend features tested and working! Here's the complete summary:
+✅ Fully Tested & Working:
+
+Authentication (login, logout, token refresh)
+2FA (Email OTP + TOTP)
+User management (CRUD + role hierarchy)
+Organization management
+Invitation flow (send, accept, revoke)
+Impersonation (ROOT → any user)
+Permissions (feature overrides)
+Plans & Licenses
+System config
+Audit logging
+Redis + rate limiting
+Celery worker + email delivery
