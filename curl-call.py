@@ -1,6 +1,6 @@
 curl -s -X POST http://localhost:8000/api/v1/auth/login/ \
   -H "Content-Type: application/json" \
-  -d '{"email":"dipnangle@gmail.com","password":"Dipnangle@908"}' | python3 -m json.tool
+  -d '{"email":"dipnangle@gmail.com","password":"Password"}' | python3 -m json.tool
 
 
 curl -s -X POST http://localhost:8000/api/v1/2fa/verify/email/ \
