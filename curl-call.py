@@ -1,13 +1,13 @@
 curl -s -X POST http://localhost:8000/api/v1/auth/login/ \
   -H "Content-Type: application/json" \
-  -d '{"email":"dipnangle@gmail.com","password":"Password"}' | python3 -m json.tool
+  -d '{"email":"dipnangle@gmail.com","password":"Dipnangle@908"}' | python3 -m json.tool
 
 
 curl -s -X POST http://localhost:8000/api/v1/2fa/verify/email/ \
   -H "Content-Type: application/json" \
   -d '{
-    "code": "185068",
-    "partial_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiMmZhX3BlbmRpbmciLCJ1c2VyX2lkIjoiMTc4NGY4ZmQtNzg3MS00NWRhLThkMjAtNzM5OGZlNmZlNzU3IiwianRpIjoiMmMzMmY1ZTQtN2FmZS00ZWU0LThhYzYtNmIwNGY2NWQ5ZTM0IiwiaWF0IjoxNzcyNzE2MTg0LCJleHAiOjE3NzI3MTY0ODQsImlzcyI6InBsYXRmb3JtIiwiYXVkIjoicGxhdGZvcm0tYXBpIn0.TsZdjqyxbr1J0AI_Yh8bj5zZDdZcL5tZrklKoPLRT3E"
+    "code": "771209",
+    "partial_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiMmZhX3BlbmRpbmciLCJ1c2VyX2lkIjoiMTc4NGY4ZmQtNzg3MS00NWRhLThkMjAtNzM5OGZlNmZlNzU3IiwianRpIjoiMWNkOGViMzMtODZiOS00YWMyLWE2NDAtNDNkOTAwMmE1M2M3IiwiaWF0IjoxNzcyODE0NjU2LCJleHAiOjE3NzI4MTQ5NTYsImlzcyI6InBsYXRmb3JtIiwiYXVkIjoicGxhdGZvcm0tYXBpIn0.LHSMVmmHt1hTB7ZvlWZJV7I70DNFBi-OSsuvJf9GY3Y"
   }' | python3 -m json.tool
 
 
@@ -316,3 +316,364 @@ curl -s -X DELETE http://10.0.0.20:8000/api/v1/sessions/dbaec805-950f-4312-9cf6-
 # List audit logs
 curl -s http://10.0.0.20:8000/api/v1/audit/ \
   -H "Authorization: Bearer $TOKEN" | python3 -m json.tool
+  
+
+# verify email first
+cd /home/django/repo/backend
+python3 -c "
+import os
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+import django
+django.setup()
+from apps.users.models import User
+emails = ['test_admin@test.com', 'test_enduser@test.com']
+for email in emails:
+    try:
+        u = User.objects.get(email=email)
+        u.is_email_verified = True
+        u.save(update_fields=['is_email_verified', 'updated_at'])
+        print(f'✅ {u.email} verified | role: {u.global_role}')
+    except User.DoesNotExist:
+        print(f'❌ {email} not found')
+"
+
+
+# disable 2fa
+
+python3 -c "
+import os
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+import django
+django.setup()
+from apps.users.models import User
+emails = ['test_admin@test.com', 'test_enduser@test.com']
+for email in emails:
+    try:
+        u = User.objects.get(email=email)
+        u.is_2fa_enabled = False
+        u.is_2fa_enforced = False
+        u.save(update_fields=['is_2fa_enabled', 'is_2fa_enforced', 'updated_at'])
+        print(f'✅ {u.email} 2FA disabled')
+    except User.DoesNotExist:
+        print(f'❌ {email} not found')
+"
+
+
+# check the users with heirarchy and thier ids
+cd /home/django/repo/backend
+python3 -c "
+import os
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+import django
+django.setup()
+from apps.users.models import User
+for u in User.objects.all():
+    print(f'{u.email} | ID: {u.id} | Role: {u.global_role}')
+"
+
+
+# ADMIN token
+ADMIN_TOKEN=$(curl -s -X POST http://10.0.0.20:8000/api/v1/auth/login/ \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test_admin@test.com","password":"Admin123!"}' | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('access_token',''))")
+echo "ADMIN TOKEN: $ADMIN_TOKEN"
+
+
+# ❌ END_USER tries to delete ADMIN — should fail
+curl -s -X DELETE http://10.0.0.20:8000/api/v1/users/331b0755-d9e9-47b2-8aaf-16230fe1aee2/ \
+  -H "Authorization: Bearer $ENDUSER_TOKEN" | python3 -m json.tool
+
+# ❌ ADMIN tries to delete SUPERADMIN — should fail
+curl -s -X DELETE http://10.0.0.20:8000/api/v1/users/1784f8fd-7871-45da-8d20-7398fe6fe757/ \
+  -H "Authorization: Bearer $ADMIN_TOKEN" | python3 -m json.tool
+
+# ✅ ROOT deletes END_USER — should work
+curl -s -X DELETE http://10.0.0.20:8000/api/v1/users/854a07ee-0231-49ee-a896-3ace25ea069d/ \
+  -H "Authorization: Bearer $ROOT_TOKEN" | python3 -m json.tool
+  
+# check the all code for organisation
+python manage.py show_urls 2>/dev/null | grep "organ"
+
+# create organization
+curl -s -X POST http://10.0.0.20:8000/api/v1/organizations/ \
+  -H "Authorization: Bearer $ROOT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Test Company",
+    "slug": "test-company",
+    "deployment_mode": "cloud"
+  }' | python3 -m json.tool
+  
+  
+# check orgnization
+curl -s http://10.0.0.20:8000/api/v1/organizations/ \
+  -H "Authorization: Bearer $ROOT_TOKEN" | python3 -m json.tool
+
+# check users with satff role
+# Create a staff SUPERADMIN and test
+cd /home/django/repo/backend
+python3 -c "
+import os
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+import django
+django.setup()
+from apps.users.models import User
+from apps.roles.models import Role
+
+# Check existing users and their global_role
+for u in User.objects.all():
+    print(f'{u.email} | global_role: {u.global_role} | is_staff: {u.global_role.level if u.global_role else \"org-level\"}')
+"
+
+# create superadmin
+cd /home/django/repo/backend
+
+# Create staff SUPERADMIN (global_role = SUPERADMIN, no org) with no verification and skip the 2fa
+python3 -c "
+import os
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+import django
+django.setup()
+from apps.users.services import create_user
+from apps.roles.models import Role
+
+role = Role.objects.get(name='SUPERADMIN')
+user = create_user(
+    email='staff_superadmin@test.com',
+    password='StaffAdmin123!',
+    first_name='Staff',
+    last_name='SuperAdmin',
+    role=role,
+    send_verification=False,
+    is_email_verified=True,
+)
+user.is_2fa_enabled = False
+user.is_2fa_enforced = False
+user.save(update_fields=['is_2fa_enabled', 'is_2fa_enforced'])
+print(f'✅ Created: {user.email} | global_role: {user.global_role}')
+"
+
+# Step 1 — Create user WITHOUT global role first
+cd /home/django/repo/backend
+
+python3 -c "
+import os
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+import django
+django.setup()
+from apps.users.models import User
+
+# Create bare user with no global role
+user = User.objects.create_user(
+    email='org_superadmin@test.com',
+    password='OrgAdmin123!',
+    first_name='Org',
+    last_name='SuperAdmin',
+    is_email_verified=True,
+    is_active=True,
+    is_2fa_enabled=False,
+    is_2fa_enforced=False,
+)
+print(f'✅ Created: {user.email} | global_role: {user.global_role}')
+"
+
+# add the superadmin in orgnization
+# Step 2 — Add this user to Test Company org with SUPERADMIN role
+python3 -c "
+import os
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+import django
+django.setup()
+from apps.organizations.models import Organization
+from apps.organizations.services import add_member_to_organization
+from apps.users.models import User
+from apps.roles.models import Role
+
+org = Organization.objects.get(slug='test-company')
+user = User.objects.get(email='org_superadmin@test.com')
+role = Role.objects.get(name='SUPERADMIN')
+
+add_member_to_organization(organization=org, user=user, role=role, added_by=user)
+print(f'✅ {user.email} added to {org.name} as SUPERADMIN')
+print(f'global_role: {user.global_role}')
+"
+
+# Step 3 — Login and check what orgs they see
+ORG_ADMIN_TOKEN=$(curl -s -X POST http://10.0.0.20:8000/api/v1/auth/login/ \
+  -H "Content-Type: application/json" \
+  -d '{"email":"org_superadmin@test.com","password":"OrgAdmin123!"}' | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('access_token',''))")
+echo "Token: $ORG_ADMIN_TOKEN"
+
+# Should only see Test Company
+curl -s http://10.0.0.20:8000/api/v1/organizations/ \
+  -H "Authorization: Bearer $ORG_ADMIN_TOKEN" | python3 -m json.tool
+  
+  
+# create plan for orgnization
+python3 -c "
+import os
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+import django
+django.setup()
+from apps.plans.models import Plan, License
+from apps.organizations.models import Organization
+from apps.users.models import User
+from django.utils import timezone
+
+plan, created = Plan.objects.get_or_create(
+    tier='basic',
+    defaults={
+        'name': 'Basic',
+        'max_superadmins': 5,
+        'max_admin_plus': 5,
+        'max_admins': 10,
+        'max_end_users': 50,
+        'features_json': {},
+        'is_active': True,
+        'price_monthly_usd': 0,
+        'price_yearly_usd': 0,
+    }
+)
+print(f'✅ Plan: {plan.name} (created: {created})')
+
+org = Organization.objects.get(slug='test-company')
+root = User.objects.get(email='dipnangle@gmail.com')
+license, created = License.objects.get_or_create(
+    organization=org,
+    defaults={
+        'plan': plan,
+        'is_active': True,
+        'valid_from': timezone.now(),
+        'valid_until': timezone.now() + timezone.timedelta(days=365),
+        'created_by': root,
+    }
+)
+print(f'✅ License: created={created} | org={org.name} | plan={plan.name}')
+"
+
+
+# invitation creation
+
+curl -s -X POST http://10.0.0.20:8000/api/v1/invitations/ \
+  -H "Authorization: Bearer $ROOT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "test@invitaion.com",
+    "role_id": "e54f7d38-0fb1-423b-8fe2-946e518b2673",
+    "organization_id": "4b546ec7-acab-40cd-97e9-3087a3ae8654"
+  }' | python3 -m json.tool
+  
+  
+# for celery we can create teh service so most of the time it will work
+# Create directories first
+mkdir -p /var/log/celery /var/run/celery
+
+cat > /etc/systemd/system/celery.service << 'EOF'
+[Unit]
+Description=Celery Worker
+After=network.target redis.service
+
+[Service]
+Type=simple
+WorkingDirectory=/home/django/repo/backend
+ExecStart=/home/django/repo/venv/bin/celery -A config.celery worker --loglevel=info
+Restart=always
+RestartSec=5
+StandardOutput=append:/var/log/celery/worker.log
+StandardError=append:/var/log/celery/worker.log
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+systemctl daemon-reload
+systemctl enable celery
+systemctl start celery
+systemctl status celery
+
+
+# check the token via curl call
+curl -s http://10.0.0.20:8000/api/v1/invitations/rTa7Q_wfWsVDj36bz4ebkfDSEghG0iSBncJ7OHaBFaYGyabj-VkZKxsEvczl3eX2/preview/ | python3 -m json.tool
+
+# accept the token
+# define before because of special character in token
+
+URL_TOKEN="rTa7Q_wfWsVDj36bz4ebkfDSEghG0iSBncJ7OHaBFaYGyabj-VkZKxsEvczl3eX2"
+
+curl -s -X POST "http://10.0.0.20:8000/api/v1/invitations/${URL_TOKEN}/accept/" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "first_name": "New",
+    "last_name": "Invite",
+    "password": "NewUser123!"
+  }' | python3 -m json.tool
+  
+  
+# Let's move to Impersonation. Check what endpoints exist:
+python manage.py show_urls 2>/dev/null | grep "imperson"
+
+
+cd /home/django/repo/backend
+python3 -c "
+import os
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+import django
+django.setup()
+from apps.users.models import User
+for u in User.objects.all():
+    print(f'{u.email} | ID: {u.id} | Role: {u.global_role}')
+"
+
+
+# ROOT impersonates end user
+ 
+curl -s -X POST http://10.0.0.20:8000/api/v1/impersonation/start/ \
+  -H "Authorization: Bearer $ROOT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "331b0755-d9e9-47b2-8aaf-16230fe1aee2"}' | python3 -m json.tool
+  
+
+# check the token
+IMPERSONATION_TOKEN="eyJhbGci..."  # paste the access_token above
+
+# Act as test_admin — get their profile
+curl -s http://10.0.0.20:8000/api/v1/users/me/ \
+  -H "Authorization: Bearer $IMPERSONATION_TOKEN" | python3 -m json.tool
+  
+
+# ADMIN tries to impersonate END_USER — should fail with 403
+curl -s -X POST http://10.0.0.20:8000/api/v1/impersonation/start/ \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "03e1d57c-3e8d-4968-9ea6-23c8aa56b75d"}' | python3 -m json.tool
+  
+# check permissions urls
+python manage.py show_urls 2>/dev/null | grep "permission"
+
+# system config check and change
+# Update maintenance_mode
+curl -s -X PATCH http://10.0.0.20:8000/api/v1/system-config/maintenance_mode/ \
+  -H "Authorization: Bearer $ROOT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"value": true}' | python3 -m json.tool
+
+# Verify it changed
+curl -s http://10.0.0.20:8000/api/v1/system-config/ \
+  -H "Authorization: Bearer $ROOT_TOKEN" | python3 -m json.tool
+  
+  
+All backend features tested and working! Here's the complete summary:
+✅ Fully Tested & Working:
+
+Authentication (login, logout, token refresh)
+2FA (Email OTP + TOTP)
+User management (CRUD + role hierarchy)
+Organization management
+Invitation flow (send, accept, revoke)
+Impersonation (ROOT → any user)
+Permissions (feature overrides)
+Plans & Licenses
+System config
+Audit logging
+Redis + rate limiting
+Celery worker + email delivery
