@@ -21,9 +21,7 @@ SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 # ─────────────────────────────────────────────
 # Database — Connection pooling via PgBouncer
 # ─────────────────────────────────────────────
-DATABASES["default"]["CONN_MAX_AGE"] = 0  # Let PgBouncer handle pooling  # noqa
-DATABASES["default"]["OPTIONS"]["pool_size"] = 20  # noqa
-DATABASES["default"]["OPTIONS"]["max_overflow"] = 10  # noqa
+DATABASES["default"]["CONN_MAX_AGE"] = 60  # noqa
 
 # ─────────────────────────────────────────────
 # Static files (WhiteNoise)
@@ -32,12 +30,9 @@ MIDDLEWARE.insert(1, "whitenoise.middleware.WhiteNoiseMiddleware")  # noqa
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 # ─────────────────────────────────────────────
-# Email — Anymail (SendGrid/SES/Mailgun)
+# Email — SMTP (configured via .env)
 # ─────────────────────────────────────────────
-EMAIL_BACKEND = "anymail.backends.sendgrid.EmailBackend"
-ANYMAIL = {
-    "SENDGRID_API_KEY": config("SENDGRID_API_KEY", default=""),  # noqa
-}
+EMAIL_BACKEND = config("EMAIL_BACKEND", default="django.core.mail.backends.smtp.EmailBackend")
 
 # ─────────────────────────────────────────────
 # Sentry
